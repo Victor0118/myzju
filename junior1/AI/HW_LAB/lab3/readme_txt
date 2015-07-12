@@ -1,0 +1,5 @@
+补全后图片矩阵存储为img_result.mat，图片保存为img_result.png；
+ai_lab3_0.m中代码使用的是给定Mark缺失点位置数据；
+ai_lab3_1.m中代码使用根据X_corrupted数据获得的缺失点位置数据。
+
+实验基本思路为，将图片rgb分三个维度处理，同时以row为单位进行回归函数处理，最终获得结果。
