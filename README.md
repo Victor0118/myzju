@@ -3,6 +3,7 @@
 
 junior0 大三上
 -linux 暑假linux(季江民)
+-操作系统原理&实验(季江民)
 
 junior1 大三下
 -AI 人工智能
