@@ -1,0 +1,39 @@
+Info
+	——Person(Composition)
+		——Teacher(Generalization)
+		——Student(Genetalization)
+			//以上两个连接以下四个
+			——PersonInsert(Realization)
+			——PersonDelete(Realization)
+			——PersonModify(Realization)
+			——PersonSearch(Realization)
+				//以上四个连接以下一个
+				——PersonSchema
+
+	——Course(Composition)
+		——CourseInsert
+		——CourseDelete
+		——CourseModify
+		——CourseSearch
+			//以上四个连接以下一个
+			——CourseSchema
+
+
+Info
+字段	Person, Course
+方法 close, open
+
+Person
+字段 Teacher, Student
+
+Teacher
+方法  PersonInsert, PersonDelete, PersonModify, PersonSearch
+
+Student
+方法 PersonInsert, PersonDelete, PersonModify, PersonSearch
+
+Course
+方法 CourseInsert, CourseInsert, CourseModify, CourseSearch
+
+CourseSchema
+字段 CourseId CourseName TeacherList

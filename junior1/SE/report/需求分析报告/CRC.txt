@@ -1,0 +1,38 @@
+PersonInsert
+说明：教务管理人员可新增用户(教师/学生)
+添加教师用户	PersonSchema PersonInsert TeacherInsert
+添加学生用户	PersonSchema PersonInsert StudentInsert
+
+PersonSelect
+说明：根据给定ID或者用户姓名获得用户信息
+根据用户ID查找用户信息	PersonSchema PersonSelectByID
+根据用户姓名查找用户信息 PersonSchema PersonSelectByName
+
+PersonDelete
+说明：删除用户
+根据用户ID删除用户 PersonSchema PersonDelete
+
+PersonModify
+说明：修改用户
+根据用户ID修改用户信息	PersonScheme PersonModify
+
+
+CourseInsert
+说明：教务管理人员可新增课程
+添加课程信息	CourseSchema CourseInsert
+
+CourseSelect
+说明：根据不同条件获得相应课程信息
+根据课程ID查找课程信息	CourseSchema CourseSelectByID
+根据课程名称查找课程信息 CourseSchea CourseSelectByName
+根据任课教师查找课程信息 CourseSchema CourseSelectByTeacherName
+根据上课时间查找课程信息 CourseSchema CourseSelectByTime
+根据上课教室查找课程信息 CourseSchema CourseSelectByRoom
+
+CourseDelete
+说明：删除课程
+修改课程ID对应课程 CourseSchema CourseDelete
+
+CourseModify
+说明：修改课程
+修改课程ID对应课程信息	CourseScheme CourseModify
