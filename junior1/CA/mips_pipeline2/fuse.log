@@ -1,0 +1,73 @@
+Running: fuse.exe -relaunch -intstyle "ise" -incremental -lib "unisims_ver" -lib "unimacro_ver" -lib "xilinxcorelib_ver" -o "G:/mips_pipeline2/test_top_isim_beh.exe" -prj "G:/mips_pipeline2/test_top_beh.prj" "work.test_top" "work.glbl" 
+ISim P.68d (signature 0x7708f090)
+Number of CPUs detected in this system: 4
+Turning on mult-threading, number of parallel sub-compilation jobs: 8 
+Determining compilation order of HDL files
+Analyzing Verilog file "G:/mips_pipeline2/code/displcd.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/alt_ctl.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/ipcore_dir/instrmem.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/ipcore_dir/Data_Mem.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/StallControlLogic.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/se.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/reg32.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/pc_plus4.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/pc.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/ME_WB.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/j_addr.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/imm_addr.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/IF_ID.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/ID_EX.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/EX_ME.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/exin.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/equal.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/display2.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/decode4_32.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/decode2_5.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/decode2_32.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/cpu_ctl.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/alu.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/top.v" into library work
+Analyzing Verilog file "G:/mips_pipeline2/code/test_top.v" into library work
+Analyzing Verilog file "F:/Software/ISE/14.6/ISE_DS/ISE//verilog/src/glbl.v" into library work
+Starting static elaboration
+Completed static elaboration
+Compiling module exin
+Compiling module pc
+Compiling module pc_plus4
+Compiling module decode4_32
+Compiling module BLK_MEM_GEN_V7_3_output_stage(C_...
+Compiling module BLK_MEM_GEN_V7_3_softecc_output_...
+Compiling module BLK_MEM_GEN_V7_3_mem_module(C_CO...
+Compiling module BLK_MEM_GEN_V7_3(C_FAMILY="spart...
+Compiling module instrmem
+Compiling module IF_ID
+Compiling module alt_ctl
+Compiling module cpu_ctl
+Compiling module reg32
+Compiling module imm_addr
+Compiling module j_addr
+Compiling module isequal
+Compiling module se
+Compiling module decode2_32
+Compiling module decode2_5
+Compiling module ID_EX
+Compiling module alu
+Compiling module EX_ME
+Compiling module BLK_MEM_GEN_V7_3_mem_module(C_CO...
+Compiling module BLK_MEM_GEN_V7_3(C_FAMILY="spart...
+Compiling module Data_Mem
+Compiling module ME_WB
+Compiling module lcd
+Compiling module genlcd
+Compiling module displcd
+Compiling module display2
+Compiling module StallControlLogic
+Compiling module top
+Compiling module test_top
+Compiling module glbl
+Time Resolution for simulation is 1ps.
+Waiting for 21 sub-compilation(s) to finish...
+Compiled 34 Verilog Units
+Built simulation executable G:/mips_pipeline2/test_top_isim_beh.exe
+Fuse Memory Usage: 33580 KB
+Fuse CPU Usage: 857 ms

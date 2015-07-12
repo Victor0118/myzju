@@ -1,0 +1,55 @@
+Mem  20+0:   4 
+Mem  21+0:   16
+
+0 18 8C010014,  lw $1, 20+$0       $1 = 4
+
+1 18 8C030015,  lw $3, 21+$0       $3 = 0x16
+
+2 11 00200008   jr r1              j 4 
+
+3 01 00411020,  add $2, $2, $1     not execute
+
+4 01 00411020,  add $2, $2, $1     $2 = 4
+
+5 02 00412021   addu r4, r2, r1    $4 = 8  1000
+6 04 00822823   subu r5, r4, r2    $5 = 4  0100
+
+7 07 00853026   xor r6, r4, r5     $6 = c  1100    
+
+8 08 00c53827   nor r7, r6, r5     $7 = ffff fff3
+
+9 09 00c7282a   slt r5, r6, r7     $5 = 0  
+
+a 0a 00c7282b   sltu r5, r6, r7    $5 = 1 
+
+b 0e 00a64004   sllv r8, r5, r6    $8 = (0x18) 0001 1000 
+
+c 19 Ac080014   sw   r8, 20+$0
+
+d 0f 01074806   srlv r9, r8, r7    $9 = 0000 00ff
+
+e 10 01075007   srav r10, r8, r7   $10 = ffff ffff
+
+f 1f 0c000011   jal 0x11 j0x11     $r31=0x40
+
+0 01 00411020,  add $2, $2, $1     not execute
+
+
+1 13 27eb0008   addiu r11, r31, 8   $11 = 0x48
+
+2 16 396c00ff   xori r12, r11,0xff  $12 = 0x00b7
+
+3 17 3c0d0001   lui r13, 1          $13 = 0x0001 0000
+
+4 18 8C010014   lw  $1, 20+$0       $1 = 0x18
+
+5 1d 2d8effff   sltui r14,  r12,    $14 = 1 
+
+6 1c 298effff   slti  r14,  r12,    $14 = 0
+
+7 1b 1428FFFB   bne r1, r8, -5      not taken
+8 01 00220820   add r1, r1, r2      r1 = 0x1C
+
+9 1b 1428FFF9   bne r1, r8, -7      taken to lui
+
+a 01 00220820   add r1, r1, r2      no r1 = 0x1C

@@ -1,0 +1,91 @@
+module top(clk,rst,btn,switch,anode,segment
+);
+	input wire clk,rst;
+	input wire [4:0] btn;
+	output wire [7:0] anode;
+	output wire [7:0] segment;
+
+	wire btnclk;
+
+	wire [31:0] instr;
+	wire [5:0] op, func;
+	wire [4:0] rs,rt,rd;
+	wire [15:0] imm;
+	wire [25:0] addr;
+	wire [31:0] shamt;
+	wire JR, J, JAL, LW, WREG, WMEM, RDorRT, SE, SA, IR, IorR, BJ;
+	wire [4:0] Aluc;
+	wire [31:0] a, b, aluresult;	//alu in/out
+	wire [4:0] r1, r2, r3, w1;	//Reg
+	wire [31:0] d1, d2, d3, wdata;	//Reg
+	wire [31:0] seout;	//signed extended
+	wire [31:0] pcplus4, pcin, pcout, immaddr, jaddr;
+	wire [31:0] memdata;
+	wire equalresult;
+
+
+
+	cpu_ctl cpu_ctl(
+		.op(op), .func(func), .equal_result(equalresult),
+		.JR(JR), .J(J), .JAL(JAL), .LW(LW),
+		.WREG(WREG), .WMEM(WMEM),. RDorRT(RDorRT),
+		.SE(SE), .IR(IR), .IorR(IorR), .BJ(BJ),
+		.Aluc(Aluc)
+	);
+
+	reg32(
+		.clk(btnclk), .rst(rst), .wea(WREG),
+		.r1(r1), .r2(r2), .r3(r3), .w1(w1),
+		.wdata(wdata), .out1(d1), .out2(d2), .out3(d3)
+    );
+
+	alu alu(
+		.a(a), .b(b), .aluc(Aluc), .result(aluresult)
+	);
+
+	imm_addr imm_addr(
+		.imm(imm), .pc(pcplus4), .out(immaddr)
+	);
+
+	j_addr j_addr(
+		.addr(addr), .pc(pcplus4), .out(jaddr)
+	);
+
+	equal equal(
+		.in1(d1), .in2(d2), .result(equalresult)
+    );
+
+	pc_plus4 pc_plus4(
+		.i_pc(pcout), o_pc(pcplus4)
+    );
+
+    pc pc(
+    	.clk(btnclk), .rst(rst), .i_pc(pcin), .o_pc(pcout)
+    );
+
+	decode2_32 alu_b(
+		.in1(seout), .in2(d2), .c(IorR), .out(b)
+	);
+
+	decode2_32 alu_a(
+		.in1(shamt), .in2(d1), .c(SA), .out(a)
+	);
+
+	decode2_5 reg_r1(
+		.in1(5'b11111), .in2(rs), .c(JR), .out(r1)
+	);
+
+	decode3_5 reg_w1(
+		.in1(5'b11111), .in2(rd), .in3(rt), .c1(JAL), .c2(RDorRT), .out(w1)
+	);
+
+	decode3_32 reg_wdata(
+		.in1(pcplus4), .in2(memdata), .in3(aluresult), .c1(JAL), .c2(LW), .out(wdata)
+	);
+
+	decode4_32 pc_in(
+		.in1(jaddr), .in2(d1), .in3(immaddr), .in4(pcplus4), .c1(J), .c2(JR), .c3(BJ), .out(pcin)
+	);
+
+
+endmodule

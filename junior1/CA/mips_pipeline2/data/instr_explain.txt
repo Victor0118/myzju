@@ -1,0 +1,45 @@
+08 20010001    addi $r1, $r0, 1    ;r1 = 1
+01 00211020    add  $r2, $r1, $r1  ;r2 = 2   EX/MEM.ALUoutput-->ALU input
+04 00011825    or   $r3, $r0, $r1  ;r3 = 1   MEM/WB.ALUoutput --> ALU input
+03 00612024    and  $r4, $r3, $r1  ;r4 = 1,  EX/MEM.ALUoutput-->ALU input
+-------------------------------------------
+beq taken 其中r4发生冲突，后两条不执行
+0D 10640002    beq  $r3, $r4, 2    ;taken     EX/MEM.ALUoutput --> equal function unit
+08 2001ffff    addi $r1, $r0, -1
+0F 08000000    j       0    
+-------------------------------------------
+向内存中保存数据
+0C ac020000 sw   $r2, 0($r0)    ;beq jump to here, mem[0] = 2
+-------------------------------------------
+以下四条lw冲突，后三条彼此独立，与第一条冲突
+0B 8c010000    lw     $r1, 0($r0)    ;r1 = 2      
+01 00211020    add    $r2, $r1, $r1  ;r2 = 4       Load stall + forwarding ( LMDR --> ALU input）
+04 00011825    or     $r3, $r0, $r1  ;r3 = 2       Double bump
+03 00212024    and    $r4, $r1, $r1  ;r4 = 2       RAW dependence  but  No data hazard
+-------------------------------------------
+0C ac040008    sw    $r4,  8($r0)    ;mem[2] = 2,   MEM/WB.ALUoutput(R4) -->DM data input
+--------------------------------------------
+以下四条均与各自的上一条指令冲突
+0B 8c030000    lw     $r3, 0($r0)    ;r3 = 2
+01 00612020    add    $r4, $r3, $r1  ;r4 = 4;      Load stall + forwarding(LMDR-->ALU input)
+08 2081fffd    addi   $r1, $r4, -3   ;r1 = 1        forwarding( EX/MEM.ALUoutput --> ALU input)
+08 20210002    addi   $r1, $r1, 2    ;r1 = 3        forwarding( EX/MEM.ALUoutput --> ALU input)
+--------------------------------------------
+数据与结构冲突，间隔一条
+0B 8c010000   lw     $r1, 0($r0)    ;r1 = 2
+08 20420001   addi   $r2, $r2, 1    ;r2 = 5           
+0E 1461000a   bne    $r3, $r1, 10   ;not taken      forwarding(LMDR-->equal function unit) 
+------------------------------------------
+数据与结构冲突，无间隔 
+0B 8c040000   lw     $r4, 0($r0)    ;r4 = 2
+0E 1464000a   bne    $r3, $r4, 10   ;not taken       load stall+ forwarding( LMDR -->equal function unit)
+-------------------------------------------
+Forward: dataFromMem  to Mem input
+0B 8c050000   lw    $r5, 0($r0)    ;r5 = 2
+0C ac050004   sw    $r5, 4($r0)    ;mem[1] = 2      forwarding ( LMDR --> MEM data input port) 
+--------------------------------------------
+0B 8c040001   lw   $r4, 1($r0)    ;r4 = 2
+0C ac820000   sw   $r2, 0($r4)    ;mem[2] = 5     Load stall + forwarding(LMDR-->ALU input)
+0B 8c810000   lw   $r1, 0($r4)    ;r1 = 5               double bump
+0F 08000000   j     0
+
