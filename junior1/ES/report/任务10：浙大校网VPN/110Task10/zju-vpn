@@ -1,0 +1,260 @@
+#!/bin/bash
+
+L2TPD_LAC=ZJU_VPN
+L2TPD_CONTROL_FILE=/var/run/xl2tpd/l2tp-control
+L2TPD_LOG_FILE=/tmp/ZJU_VPN
+VPN_SERVER="10.5.1.9"
+
+# the following is related to configure file setting
+L2TPD_CFGFILE=/etc/xl2tpd/xl2tpd.conf
+L2TPD_OPTFILE=/etc/ppp/options.xl2tpd.zju
+L2TPD_AUTHFILE=/etc/ppp/chap-secrets
+VPNNAME_MODE=@[acd]
+
+function check_cfg {
+    if ! grep -q $L2TPD_LAC $L2TPD_CFGFILE || ! grep -q $VPNNAME_MODE $L2TPD_CFGFILE; then
+        return 1
+    fi
+
+    if [ ! -f $L2TPD_OPTFILE ] || ! grep -q $L2TPD_LAC $L2TPD_OPTFILE; then
+        return 1
+    fi
+
+    if ! grep -q $VPNNAME_MODE $L2TPD_AUTHFILE; then
+        return 1
+    fi
+
+    if [ ! -f $L2TPD_LOG_FILE ]; then
+        touch $L2TPD_LOG_FILE
+    fi
+    return 0
+}
+
+function clear_cfg {
+python << EOF
+f = open("$L2TPD_CFGFILE", 'r+')
+str = ""
+skip_flag = False
+for line in f:
+    lac_flag = False
+    zju_flag = False
+    if line.find("[lac ") >= 0:
+        lac_flag = True
+    if line.lower().find("zju") >= 0:
+        zju_flag = True
+    if lac_flag == True and zju_flag == True:
+        skip_flag = True
+#         print "I've found "+line,
+#         print("I've found "+line, end='')
+    if lac_flag == True and zju_flag == False:
+        skip_flag = False
+    if skip_flag == False:
+        str = str + line
+
+f.seek(0)
+f.truncate()
+f.write(str)
+f.close()
+EOF
+
+rm $L2TPD_OPTFILE
+
+TMPFILE=`mktemp`
+cat $L2TPD_AUTHFILE | sed -e "/$VPNNAME_MODE/d" > $TMPFILE
+cp -a $TMPFILE $L2TPD_AUTHFILE
+rm $TMPFILE
+
+}
+
+function flush_cfg {
+    USERNAME=
+    PASSWORD=
+    until echo $USERNAME | grep -q $VPNNAME_MODE
+    do
+        echo -e "WARNING: If you are connecting to ZJU VPN, you\e[01;31;1m must\e[0m append your domain name (e.g. @a / @c / @d) after your username."
+        read -p "Username: " USERNAME
+    done
+    read -s -p "Password: " PASSWORD
+    echo
+
+cat >> $L2TPD_CFGFILE << EOF
+[lac $L2TPD_LAC]
+lns = $VPN_SERVER
+redial = yes
+redial timeout = 15
+max redials = 5
+require pap = no
+require chap = yes
+require authentication = yes
+name = $USERNAME
+ppp debug = no
+pppoptfile = $L2TPD_OPTFILE
+EOF
+
+cat >> $L2TPD_OPTFILE << EOF
+noauth
+linkname $L2TPD_LAC
+logfile  $L2TPD_LOG_FILE
+proxyarp
+defaultroute
+EOF
+
+cat >> $L2TPD_AUTHFILE << EOF
+$USERNAME    *    $PASSWORD    *
+EOF
+
+}
+
+function ppp_if {
+    PPPIF=$(ifconfig | grep -B 1 10\.5\. | grep -B 1 255\.255\.255\.255 | grep Link | awk '{print $1}' | head -n 1)
+    if [ ! "$PPPIF" ]; then
+        PPPIF=$(route -n | grep ^10\.5\. | grep 255\.255\.255\.255 | rev | awk '{print $1}' | rev)
+    fi
+    echo $PPPIF
+}
+
+function local_if {
+    LOCALIF=$(ip route get $VPN_SERVER | grep dev | sed -e 's/.* dev//g' | awk '{print $1}' | head -n 1)
+    echo $LOCALIF
+}
+
+function local_gw {
+    LOCALGW=$(ip route get $VPN_SERVER | grep via | sed -e 's/.* via//g' | awk '{print $1}' | head -n 1)
+    echo $LOCALGW
+}
+
+function stop_ppp {
+    echo -n > $L2TPD_LOG_FILE
+    echo "d $L2TPD_LAC" > $L2TPD_CONTROL_FILE &
+    sleep 1
+    /etc/init.d/xl2tpd stop > /dev/null
+    PPPIF=$(ppp_if)
+    if [ "$PPPIF" ]; then
+        ifconfig $PPPIF down
+    fi
+    PPPIF=$(ppp_if)
+    if [ -z "$PPPIF" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+function start_ppp {
+    echo -n > $L2TPD_LOG_FILE
+    /etc/init.d/xl2tpd start > /dev/null
+    until [ -f /var/run/xl2tpd.pid ] && [ `cat /var/run/xl2tpd.pid | wc -c` -ge 0 ]; do
+        sleep 1
+    done
+    echo "c $L2TPD_LAC" > $L2TPD_CONTROL_FILE
+    tail -f $L2TPD_LOG_FILE | while read LOGLINE
+    do
+        echo -n "[LOG] pppd: "
+        echo $LOGLINE
+        if echo $LOGLINE | grep -q "remote IP address"; then
+            pkill -P $$ tail
+            echo [LOG] pppd: succeed!
+            return 0
+        elif echo $LOGLINE | grep -q "Connection terminated"; then
+            pkill -P $$ tail
+            echo [ERR] pppd: failed!
+            return 1
+        fi
+    done
+}
+
+function check_exist {
+    if [ -f /var/run/xl2tpd.pid ] && [ `cat /var/run/xl2tpd.pid | wc -c` -ge 0 ] && [ "$(ppp_if)" ] ; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+function set_staticroute {
+    LOCALIF=$(local_if)
+    LOCALGW=$(local_gw)
+    if [ "$LOCALGW" ] && [ "$LOCALIF" ]; then
+        ip route add 10.0.0.0/8 via $LOCALGW dev $LOCALIF || ip route replace 10.0.0.0/8 via $LOCALGW dev $LOCALIF
+    elif [ "$LOCALIF" ]; then
+        ip route add 10.0.0.0/8 dev $LOCALIF || ip route replace 10.0.0.0/8 dev $LOCALIF
+    fi
+    echo [LOG] set static route done!
+}
+
+function set_ppproute {
+    PPPIF=$(ppp_if)
+    if [ "$PPPIF" ]; then
+        ip route add default dev $PPPIF || ip route replace default dev $PPPIF
+        if [ -f ./CIDR_IPV4_CN.txt ]; then
+            IPs=`cat ./CIDR_IPV4_CN.txt`
+            for IP in $IPs; do
+                ip route add $IP dev $PPPIF || ip route replace $IP dev $PPPIF
+            done
+        else
+            echo CIDR_IPV4_CN.txt not exist!
+        fi
+    else
+        echo [ERR] ppp[0-9] not created!
+    fi
+    echo [LOG] set ppp route done!
+}
+
+function unset_ppproute {
+    LOCALIF=$(local_if)
+    LOCALGW=$(local_gw)
+    if [ "$LOCALGW" ] && [ "$LOCALIF" ]; then
+        ip route add default via $LOCALGW dev $LOCALIF || ip route replace  default via $LOCALGW dev $LOCALIF
+    elif [ "$LOCALIF" ]; then
+        ip route add default dev $LOCALIF || ip route replace default dev $LOCALIF
+    fi
+    echo [LOG] unset ppp route done!
+}
+
+function connect {
+    set_staticroute
+    if ! start_ppp; then
+        echo [ERR] can not start ppp!
+        exit 1
+    fi
+    set_ppproute
+    echo [LOG] connect done!
+}
+
+function disconnect {
+    if ! stop_ppp; then
+        echo [ERR] can not stop ppp!
+        exit 1
+    fi
+    unset_ppproute
+    echo [LOG] disconnect done!
+}
+
+if [ "$UID" != "0" ]; then
+    echo [ERR] You must be super user to run this utility!
+    exit 1
+fi
+
+if ! check_cfg || [ "$1" = "-c" ]; then
+    clear_cfg
+    flush_cfg
+fi
+
+disconnect
+
+if [ "$1" = "-c" ] || [ "$1" = "-d" ]; then
+    exit 0
+fi
+
+connect
+
+# if ! ping -q -c 1 -w 2 $VPN_SERVER > /dev/null; then
+#     echo [ERR] $VPN_SERVER unavailable
+#     exit 1
+# else
+#     echo [LOG] $VPN_SERVER available
+#     if connect; then
+#         set_staticroute
+#         set_ppproute
+#     fi
+# fi
