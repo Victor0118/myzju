@@ -1,0 +1,17 @@
+#!/bin/bash
+if [ $# -ne 1 ]; then
+	echo "Error : one parameter allowed!"
+	exit 0
+elif [ ! -d $1 ]; then
+	echo "Error : $1 not a common file!"
+else
+#	echo "The total bytes is : "
+	echo -n "The number of general file : "
+	ls -l $1 | grep -c '^\-'
+	echo -n "The number of subfile : "
+	ls -l $1 | grep -c '^d'
+	echo -n "The number of executable file : "
+	ls -l $1 | cut -d ' ' -f1 | grep -c 'x'
+	#ls -l $1 | awk 'BEGIN {count=0;} {size=size+$5} END {print "The total size is ", size, "bytes."}'
+	ls -l $1 | awk 'BEGIN {size=0;} {size=size+$5} END {print "The total size is", size, "bytes."}'
+fi
