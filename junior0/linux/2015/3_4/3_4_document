@@ -1,0 +1,20 @@
+admin
+createTeacherAccount
+updateTeacherAccount
+removeTeacherAccount
+listTeacherAccount
+createCourse
+updateCourse
+removeCourse
+
+TeacherAccount
+id
+name
+-status
+-password
+
+Course
+name
+
+TeacherCourse
+cname tname

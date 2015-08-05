@@ -1,0 +1,19 @@
+#!/bin/bash
+count=0
+sum=0
+while [ $count -lt 5 ]
+do
+	count=`expr $count + 1`
+	#等号前后不能有空格
+	echo -n "The $count number : "
+	read num
+	echo $num >> thetmp
+	sum=`expr $sum + $num`
+done
+echo "The min number : $(sort -n thetmp | head -n1)" 
+echo "The max number : $(sort -rn thetmp | head -n1)" 
+average=`expr $sum / $count` #除号前后必须有空格
+echo "The average : $average"
+echo "The sort sequence : "
+echo "$(sort -n thetmp)"
+>thetmp

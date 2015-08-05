@@ -1,0 +1,4 @@
+#!/bin/bash
+read p1 p2
+echo "p1 $p1"
+echo "p2 $p2"

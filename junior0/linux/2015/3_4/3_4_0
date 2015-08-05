@@ -1,0 +1,202 @@
+#!/bin/bash
+loginFlag=0
+while true;do
+	#login part
+
+	while [ $loginFlag = 0 ];do
+		read -p 'Input ID : ' userID
+		read -sp 'Password : ' userPass #p 制定提示; s 不显示输入
+		echo
+		IFS="
+		"
+		userStatus=0
+		userName=''
+		for LINE in `cat ./passwd`
+		do
+			tmpID=`echo $LINE | cut -d ' ' -f1`
+			if [ $tmpID = $userID ];then
+				tmpPass=`echo $LINE | cut -d ' ' -f4`
+				if [ $tmpPass = $userPass ];then
+					userName=`echo $LINE | cut -d ' ' -f2`
+					userStatus=`echo $LINE | cut -d ' ' -f3`
+					loginFlag=1
+					echo "Welcome to $userStatus $userName!"
+					break
+				else
+					echo "Password Error!"
+					userStatus=1
+					break
+				fi
+			fi
+		done
+
+		if [ $userStatus = 0 ];then
+			echo 'No such user for this ID!'
+		fi
+	done
+
+	cmd=1
+	#cmd 0 quit, 1 
+	while [ $cmd -ne 0 ];do
+		read -p "HWMS@$userName\$ " cmmd
+		case $cmmd in 
+		cta)
+			read -p "Input teacher's ID : " tID
+			if [ `echo $tID | grep '^\d\{6\}$' | wc -l` == 1 ];then
+				if [ `cat passwd | grep $tID | wc -l` == 1 ];then
+					echo "ID used!"
+				else
+					while true
+					do
+						read -sp "Enter Password : " tPass
+						echo
+						read -sp "Password Again : " tPass2
+						echo
+						if [ $tPass != $tPass2 ];then
+							echo "Password Different!"
+						else
+							read -p "Enter Name : " tName
+							tName=`echo $tName | awk '{print $1}'`
+							echo "$tID $tName teacher $tPass" >> passwd
+							echo "Create teacher $tName OK!"
+							break
+						fi
+					done
+				fi
+				else
+					echo "Teacher's ID must be 6 digit numbers!"
+			fi
+			;;
+		uta)
+			read -p "Input teacher's ID : " tID
+			tInf=`cat passwd | grep $tID`
+			if [[ $tInf = "" ]];then
+				echo "ID not exist!"
+			else
+				#tID=`echo $tID`可去除两边空格 $(echo $tID)
+				tName=`echo $tInf | cut -d ' ' -f2`
+				tPass=`echo $tInf | cut -d ' ' -f4`
+				while true;do
+					echo "-- update Password input p;"
+					echo "-- update Name input n"
+					echo "-- update Name and Password input np"
+					read -p "HWMS@$userName uta\$ " ucmd
+					case $ucmd in
+					n)
+						read -p "Enter Name : " tName
+						tName=`echo $tName | awk '{print $1}'`
+						sed -e "/$tInf/d" passwd >passwd2
+						cat passwd2 >passwd
+						echo "$tID $tName teacher $tPass" >> passwd
+						echo "Update teacher $tID@$tName OK!"
+						break
+						;;
+					p)
+						
+						while true;do
+							read -sp "Enter Password : " tPass
+							echo
+							read -sp "Password Again : " tPass2
+							echo
+							if [ $tPass != $tPass2 ];then
+								echo "Password Different!"
+							else
+								sed -e "/$tInf/d" passwd >passwd2
+								cat passwd2 >passwd
+								echo "$tID $tName teacher $tPass" >> passwd
+								echo "Update teacher $tName's Password OK!"
+								break 2
+							fi
+						done
+						;;
+					np|pn)
+						while true;do
+						read -sp "Enter Password : " tPass
+						echo
+						read -sp "Password Again : " tPass2
+						echo
+						if [ $tPass != $tPass2 ];then
+							echo "Password Different!"
+						else
+							read -p "Enter Name : " tName
+							tName=`echo $tName | awk '{print $1}'`
+							sed -e "/$tInf/d" passwd >passwd2
+							cat passwd2 >passwd
+							echo "$tID $tName teacher $tPass" >> passwd
+							echo "Update teacher $tID@$tName with New Password OK!"
+							break
+						fi
+						done
+						;;
+					*)
+						echo "Unknown command."
+						;;
+					esac
+				done
+			fi
+			;;
+		rta)
+			read -p "Input teacher's ID : " tID
+			tInf=`cat passwd | grep $tID`
+			echo $tInf
+			if [[ $tInf = "" ]];then
+				echo "ID not exist!"
+			else
+				while true;do
+					read -n1 -p "Do you really want to remove teacher $tID@$tName [y|n]?" rdt
+					case $rdt in
+					Y|y)
+						sed -e "/$tInf/d" passwd >passwd2
+						cat passwd2 >passwd
+						echo
+						echo "Teacher $tID@$tName removed!"
+						break
+						;;
+					N|n)
+						echo
+						break
+						;;
+					*)
+						echo "Error choice!"
+						;;
+					esac
+				done
+			fi
+			tInf=`cat passwd | grep $tID`
+			;;
+		lta)
+			echo "ID Name Status"
+			cat passwd | cut -d ' ' -f1,2,3
+			;;
+		cc)
+			echo "cc	-- update teacher account!"
+			;;
+		uc)
+			echo "uc	-- update teacher account!"
+			;;
+		rc)
+			echo "rc	-- update teacher account!"
+			;;
+		h|help)
+			echo "cta		-- create teacher account!"
+			echo "uta		-- update teacher account!"
+			echo "rta		-- remove teacher account!"
+			echo "lta		-- list teacher account!"
+			echo "cc		-- create course!"
+			echo "uc		-- update course!"
+			echo "rc		-- remove course!"
+			echo "help		-- print this help!"
+			;;
+		exit)
+			cmd=0
+			;;
+		quit)
+			echo "Quit Homework Manage System!"
+			break 2
+			;;
+		*)
+			echo "Unknown command. Type 'h' for help."
+			;;
+		esac
+	done
+done

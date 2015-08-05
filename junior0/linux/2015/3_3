@@ -1,0 +1,12 @@
+#!/bin/bash
+echo -n 'Input a string : '
+read inString
+tmpString=`echo $inString | tr -dc [:alpha:]`
+#tr -dc [a-zA-Z]
+tmpString2=`echo $tmpString | rev`
+
+if [ $tmpString = $tmpString2 ];then #等号前后必须有空格
+	echo 'Yes'
+else
+	echo 'No'
+fi
