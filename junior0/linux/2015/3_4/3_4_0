@@ -1,20 +1,26 @@
 #!/bin/bash
 loginFlag=0
 while true;do
-	#login part
-
+	
+	# login part 登录循环
 	while [ $loginFlag = 0 ];do
-		read -p 'Input ID : ' userID
+		read -p 'Enter ID : ' userID
 		read -sp 'Password : ' userPass #p 制定提示; s 不显示输入
 		echo
+		#IFS 以换行符作为文件读取分界
 		IFS="
 		"
+		#userStatus 0为未登录,1为密码错误,管理员为admin,教师为teacher,学生为student
 		userStatus=0
 		userName=''
+		#passwd 当前目录下存放用户信息文件
+		#for 读取每一行,寻找匹配行,其实可以用grep简单实现,像之后的账户密码匹配一样
 		for LINE in `cat ./passwd`
 		do
+			#cut -d后面跟的是自定义的分隔符,-f1取第一列
 			tmpID=`echo $LINE | cut -d ' ' -f1`
 			if [ $tmpID = $userID ];then
+				#取密码,对比
 				tmpPass=`echo $LINE | cut -d ' ' -f4`
 				if [ $tmpPass = $userPass ];then
 					userName=`echo $LINE | cut -d ' ' -f2`
@@ -35,15 +41,18 @@ while true;do
 		fi
 	done
 
-	cmd=1
-	#cmd 0 quit, 1 
-	while [ $cmd -ne 0 ];do
+	while true;do
+		#输出命令头,输入命令10种,见下文help里的定义
 		read -p "HWMS@$userName\$ " cmmd
+		#命令共有
 		case $cmmd in 
+		#cta Create Teacher account 创建教师账号
 		cta)
-			read -p "Input teacher's ID : " tID
-			if [ `echo $tID | grep '^\d\{6\}$' | wc -l` == 1 ];then
-				if [ `cat passwd | grep $tID | wc -l` == 1 ];then
+			read -p "Enter Teacher ID : " tID
+			#Teacher ID 必须是6个整数 '^\d\{6\}$' 正则表达式
+			if [[ `echo $tID | grep '^\d\{6\}$' ` != "" ]];then
+				#ID 已存在
+				if [[ `cat passwd | cut -d ' ' -f1 | grep $tID ` != "" ]];then
 					echo "ID used!"
 				else
 					while true
@@ -52,10 +61,13 @@ while true;do
 						echo
 						read -sp "Password Again : " tPass2
 						echo
+						#前后密码必须一致
 						if [ $tPass != $tPass2 ];then
 							echo "Password Different!"
 						else
+							#输入Teacher Name
 							read -p "Enter Name : " tName
+							#awk '{print $1}' 取输入的第一列
 							tName=`echo $tName | awk '{print $1}'`
 							echo "$tID $tName teacher $tPass" >> passwd
 							echo "Create teacher $tName OK!"
@@ -67,9 +79,11 @@ while true;do
 					echo "Teacher's ID must be 6 digit numbers!"
 			fi
 			;;
+		#uta Update Teacher account 更新教师账号
 		uta)
-			read -p "Input teacher's ID : " tID
-			tInf=`cat passwd | grep $tID`
+			read -p "Enter Teacher ID : " tID
+			tInf=`awk -v tmp=$tID '$1==tmp{print $1,$2,$3,$4}' passwd`
+			#后面代码有问题，如果姓名或者密码出现条件字符，则也会被选中 tInf=`cat passwd | grep $tID`
 			if [[ $tInf = "" ]];then
 				echo "ID not exist!"
 			else
@@ -77,22 +91,24 @@ while true;do
 				tName=`echo $tInf | cut -d ' ' -f2`
 				tPass=`echo $tInf | cut -d ' ' -f4`
 				while true;do
-					echo "-- update Password input p;"
-					echo "-- update Name input n"
-					echo "-- update Name and Password input np"
+					echo "-- update Password Enter p;"
+					echo "-- update Name Enter n"
+					echo "-- update Name and Password Enter np"
 					read -p "HWMS@$userName uta\$ " ucmd
 					case $ucmd in
+					#修改 name
 					n)
 						read -p "Enter Name : " tName
 						tName=`echo $tName | awk '{print $1}'`
+						#sed 删除含有Inf的行,重定向到临时文件passwd2,然后再返回给passwd
 						sed -e "/$tInf/d" passwd >passwd2
 						cat passwd2 >passwd
 						echo "$tID $tName teacher $tPass" >> passwd
 						echo "Update teacher $tID@$tName OK!"
 						break
 						;;
+					#修改password
 					p)
-						
 						while true;do
 							read -sp "Enter Password : " tPass
 							echo
@@ -109,6 +125,7 @@ while true;do
 							fi
 						done
 						;;
+					#修改name和password
 					np|pn)
 						while true;do
 						read -sp "Enter Password : " tPass
@@ -135,21 +152,22 @@ while true;do
 				done
 			fi
 			;;
+		#remove Teacher account 删除教师账号
 		rta)
-			read -p "Input teacher's ID : " tID
-			tInf=`cat passwd | grep $tID`
-			echo $tInf
+			read -p "Enter Teacher ID : " tID
+			tInf=`cat passwd | cut -d ' ' -f1 | grep $tID`
 			if [[ $tInf = "" ]];then
 				echo "ID not exist!"
 			else
 				while true;do
-					read -n1 -p "Do you really want to remove teacher $tID@$tName [y|n]?" rdt
+					read -n1 -p "Do you really want to remove teacher tID@$tID [y|n]?" rdt
 					case $rdt in
 					Y|y)
-						sed -e "/$tInf/d" passwd >passwd2
+						sed -e "/^$tInf/d" passwd > passwd2
+						#由于tInf只包含了ID的信息，所以这一行不能删除任何东西 sed -e "/$tInf/d" passwd >passwd2
 						cat passwd2 >passwd
 						echo
-						echo "Teacher $tID@$tName removed!"
+						echo "Teacher tID@$tID removed!"
 						break
 						;;
 					N|n)
@@ -162,21 +180,155 @@ while true;do
 					esac
 				done
 			fi
-			tInf=`cat passwd | grep $tID`
 			;;
+		#list Teacher account 打印教师账号
 		lta)
-			echo "ID Name Status"
-			cat passwd | cut -d ' ' -f1,2,3
+			echo "--ID--  --Name-- --Status--"
+			#打印passwd中第1,2,3列,不打印第4列密码;有点小问题,如果非教师用户的密码或者姓名为teacher,也会被打印出,可改进
+			cat passwd | cut -d ' ' -f1,2,3 | grep "teacher"
 			;;
+		#cc create course 创建课程
 		cc)
-			echo "cc	-- update teacher account!"
+			read -p "Enter Course ID : " cID
+			#Course ID 必须是大写字母+6个整数 '^[A-Z]\d\{6\}$' 正则表达式
+			cID=`echo $cID | grep '^[A-Z]\d\{6\}$'`;
+			if [[ $cID = "" ]];then
+				echo "Course's ID must be 1 upper letter with 6 digit numbers, like 'A000001'!"
+			else
+				#ID 已存在
+				cInf=`cat courseinf| cut -d ' ' -f1 | grep "$cID"`;
+				if [[ $cInf = "" ]];then
+					while true
+					do
+						#“默认教师数目为1”
+						read -p "Enter Teacher ID : " cTID
+						cTID=`echo $cTID | awk '{print $1}'`
+						if [[ `cat passwd | cut -d ' ' -f1 | grep $cTID ` != "" ]];then
+							read -p "Enter Course Name : " cName
+							echo "$cID $cName $cTID">>courseinf
+							echo "Create Course $cID@$cName OK!"
+							break
+						else
+							echo "Teacher ID not exist!"
+						fi
+					done
+				else
+					echo "ID used!"
+				fi
+			fi
 			;;
+		#uc update course 更新课程信息
 		uc)
-			echo "uc	-- update teacher account!"
+			read -p "Enter Course ID : " cID
+			cInf=`awk -v tmp=$cID '$1==tmp{print $1,$2,$3}' courseinf`
+			if [[ $cInf = "" ]];then
+				echo "ID not exist!"
+			else
+				cName=`echo $cInf | cut -d ' ' -f2`
+				cTID=`echo $cInf | cut -d ' ' -f3`
+				while true;do
+					echo "-- update Course Name Enter n;"
+					echo "-- update Course Teacher Enter t"
+					echo "-- update both Course Name and Teacher Enter nt"
+					read -p "HWMS@$userName uc\$ " ucmd
+					case $ucmd in
+					#修改 name
+					n)
+						read -p "Enter Name : " cName
+						cName=`echo $cName | awk '{print $1}'`
+						sed -e "/$cInf/d" courseinf >courseinf2
+						cat courseinf2 >courseinf
+						echo "$cID $cName $cTID" >> courseinf
+						echo "Update Course $cID@$cName OK!"
+						break
+						;;
+					#修改 teacher
+					t)
+						while true; do
+							read -p "Enter Teacher ID : " cTID
+							cTID=`echo $cTID | grep '^\d\{6\}$' | awk '{print $1}'`
+							if [[ $cTID = "" ]];then
+								echo "Teacher's ID must be 6 digit numbers!"
+							else
+								#grep teacher有点小问题,如果非教师的姓名或密码是teacher,也会进入选项
+								if [[ `cat passwd | grep teacher | cut -d ' ' -f1 | grep $cTID` = "" ]];then
+									echo "Teacher ID not exist!"
+								else
+									sed -e "/$cInf/d" courseinf >courseinf2
+									cat courseinf2 >courseinf
+									echo "$cID $cName $cTID" >> courseinf
+									echo "Update Course $cID@$cName OK!"
+									break 2
+								fi
+							fi
+						done
+						;;
+					#修改name和password
+					nt|tn)
+						while true
+						do
+							#“默认教师数目为1”
+							read -p "Enter Teacher ID : " cTID
+							cTID=`echo $cTID | grep '^\d\{6\}$' | awk '{print $1}'`
+							if [[ $cTID = "" ]];then
+								echo "Teacher's ID must be 6 digit numbers!"
+							else
+								if [[ `cat passwd | cut -d ' ' -f1 | grep $cTID ` != "" ]];then
+									read -p "Enter Course Name : " cName
+									cName=`echo $cName | awk '{print $1}'`
+									sed -e "/$cInf/d" courseinf >courseinf2
+									cat courseinf2 >courseinf
+									echo "$cID $cName $cTID">>courseinf
+									echo "Update Course $cID@$cName OK!"
+									break 2
+								else
+									echo "Teacher ID not exist!"
+								fi
+							fi
+						done
+						;;
+					*)
+						echo "Unknown command."
+						;;
+					esac
+				done
+			fi
 			;;
+		#rc remove course 删除课程
 		rc)
-			echo "rc	-- update teacher account!"
+			read -p "Enter Course ID : " cInf
+			cInf=`cat courseinf | cut -d ' ' -f1 | grep $cInf`
+			if [[ $cInf = "" ]];then
+				echo "ID not exist!"
+			else
+				while true;do
+					read -n1 -p "Do you really want to remove course cID@$cID [y|n]?" rdt
+					case $rdt in
+					Y|y)
+						sed -e "/^$cInf/d" courseinf > courseinf2
+						#由于tInf只包含了ID的信息，所以这一行不能删除任何东西 sed -e "/$tInf/d" passwd >passwd2
+						cat courseinf2 >courseinf
+						echo
+						echo "Course cID@$cID removed!"
+						break
+						;;
+					N|n)
+						echo
+						break
+						;;
+					*)
+						echo "Error choice!"
+						;;
+					esac
+				done
+			fi
 			;;
+		#lc list course 列出课程
+		lc)
+			echo "--ID--  --Name-- --tID--"
+			cat courseinf
+			;;
+		#help 打印帮助
 		h|help)
 			echo "cta		-- create teacher account!"
 			echo "uta		-- update teacher account!"
@@ -185,11 +337,17 @@ while true;do
 			echo "cc		-- create course!"
 			echo "uc		-- update course!"
 			echo "rc		-- remove course!"
+			echo "lc		-- list course!"
+			echo "exit		-- exit current user!"
+			echo "quit		-- quit program!"
 			echo "help		-- print this help!"
 			;;
+		#退出登录用户
 		exit)
-			cmd=0
+			loginFlag=0
+			break
 			;;
+		#退出程序
 		quit)
 			echo "Quit Homework Manage System!"
 			break 2
